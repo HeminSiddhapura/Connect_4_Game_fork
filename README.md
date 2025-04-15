@@ -3,3 +3,5 @@
 Pruning for optimized decision-making.
 • Implemented a complete heap tree data structure to efficiently process the game tree
 • Showcasing strong algorithmic optimization skills and game development proficiency in C++
+
+- email id: neelpatel29072001@gmail.com
