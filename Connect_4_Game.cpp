@@ -43,36 +43,60 @@ int tabScore(int [6][7],  int);
 array<int, 2> miniMax(int [6][7], int, int, int,  int);
 int heurFunction(int, int, int);
 void setDifficulty();
+bool vsAI = true; // true: Player vs AI, false: 2-Player mode
+
 //-------------------------------------------------------------------------------//
 
 void playGame() 
 {
 	printBoard(); 
 	while (!gameOver) 
-	{ // while no game over state
-		if (currentPlayer == COMPUTER) 
-		{ // AI move
-			makeMove(board, aiMove(), COMPUTER);
+	{
+		if (vsAI) 
+		{
+			if (currentPlayer == COMPUTER) 
+			{
+				makeMove(board, aiMove(), COMPUTER);
+				gameOver = winningMove(board, COMPUTER);
+			}
+			else 
+			{
+				makeMove(board, userMove(), PLAYER);
+				gameOver = winningMove(board, PLAYER);
+			}
 		}
-		else if (currentPlayer == PLAYER) 
-		{ // player move
-			makeMove(board, userMove(), PLAYER);
+		else 
+		{
+			cout << "Player " << currentPlayer << "'s turn:" << endl;
+			makeMove(board, userMove(), currentPlayer);
+			gameOver = winningMove(board, currentPlayer);
 		}
-		else if (turns == 6 * 7) 
-		{ 
-		    gameOver = true;
-		}
-		gameOver = winningMove(board, currentPlayer); // check if player won
-		currentPlayer = (currentPlayer == 1) ? 2 : 1; // switch player
-		turns++; // iterate number of turns
+
 		cout << endl;
-		printBoard(); // print board after successful move
+		printBoard();
+
+		if (gameOver) break;
+
+		turns++;
+		if (turns == 6 * 7) 
+		{
+			gameOver = true;
+			break;
+		}
+
+		currentPlayer = (currentPlayer == PLAYER) ? COMPUTER : PLAYER;
 	}
-	if (turns == 6 * 7) { // if draw condition
+
+	if (turns == 6 * 7 && !winningMove(board, PLAYER) && !winningMove(board, COMPUTER)) 
+	{
 		cout << "Draw!" << endl;
 	}
-	else { // otherwise, someone won
-		cout << ((currentPlayer == PLAYER) ? "AI Wins!" : "Player Wins!") << endl;
+	else 
+	{
+		if (vsAI)
+			cout << ((currentPlayer == PLAYER) ? "Player Wins!" : "AI Wins!") << endl;
+		else
+			cout << "Player " << currentPlayer << " Wins!" << endl;
 	}
 }
 //-------------------------------------------------------------------------------//
@@ -287,57 +311,41 @@ int heurFunction( int g,  int b,  int z) {
 //-------------------------------------------------------------------------------//
 
 bool winningMove(int b[6][7], int p) {
-	 int winSequence = 0; // to count adjacent pieces of board
+    // Horizontal check
+    for (int r = 0; r < 6; r++) {
+        for (int c = 0; c <= 7 - 4; c++) {
+            if (b[r][c] == p && b[r][c+1] == p && b[r][c+2] == p && b[r][c+3] == p)
+                return true;
+        }
+    }
 
-	// for horizontal checks
-	for ( int c = 0; c < 4; c++) { // for each column
-		for ( int r = 0; r < 6; r++) { // each row
-			for (int i = 0; i < 4; i++) { 
-				if ((int)b[r][c + i] == p) { // if not all pieces match
-					winSequence++; 
-				}
-				if (winSequence == 4) { return true; } // if 4 in row
-			}
-			winSequence = 0; // reseting the counter
-		}
-	}
-	// vertical checks
-	for ( int c = 0; c < 7; c++) {
-		for ( int r = 0; r < 3; r++) {
-			for (int i = 0; i < 4; i++) {
-				if (( int)b[r + i][c] == p) {
-					winSequence++;
-				}
-				if (winSequence == 4) { return true; }
-			}
-			winSequence = 0;
-		}
-	}
-	// the below two are diagonal checks
-	for ( int c = 0; c < 4; c++) {
-		for ( int r = 3; r < 6; r++) {
-			for (int i = 0; i < 4; i++) {
-				if (( int)b[r - i][c + i] == p) {
-					winSequence++;
-				}
-				if (winSequence == 4) { return true; }
-			}
-			winSequence = 0;
-		}
-	}
-	for ( int c = 0; c < 4; c++) {
-		for ( int r = 0; r < 3; r++) {
-			for (int i = 0; i < 4; i++) {
-				if (( int)b[r + i][c + i] == p) {
-					winSequence++;
-				}
-				if (winSequence == 4) { return true; }
-			}
-			winSequence = 0;
-		}
-	}
-	return false; // if no winning move
+    // Vertical check
+    for (int c = 0; c < 7; c++) {
+        for (int r = 0; r <= 6 - 4; r++) {
+            if (b[r][c] == p && b[r+1][c] == p && b[r+2][c] == p && b[r+3][c] == p)
+                return true;
+        }
+    }
+
+    // Diagonal (\) check
+    for (int r = 0; r <= 6 - 4; r++) {
+        for (int c = 0; c <= 7 - 4; c++) {
+            if (b[r][c] == p && b[r+1][c+1] == p && b[r+2][c+2] == p && b[r+3][c+3] == p)
+                return true;
+        }
+    }
+
+    // Diagonal (/) check
+    for (int r = 3; r < 6; r++) {
+        for (int c = 0; c <= 7 - 4; c++) {
+            if (b[r][c] == p && b[r-1][c+1] == p && b[r-2][c+2] == p && b[r-3][c+3] == p)
+                return true;
+        }
+    }
+
+    return false;
 }
+
 //-------------------------------------------------------------------------------//
 
 void initBoard() // to reset the board
@@ -429,18 +437,40 @@ int main()
         cout <<"---------------------------" << endl;
         if(ch == 0)
             break;
-        setDifficulty();
+    
+        int modeChoice;
+        while (true)
+        {
+            cout << "\nChoose Game Mode:\n1. Player vs AI\n2. 2 Player Mode" << endl;
+            cin >> modeChoice;
+            if (modeChoice == 1)
+            {
+                vsAI = true;
+                setDifficulty();
+                break;
+            }
+            else if (modeChoice == 2)
+            {
+                vsAI = false;
+                break;
+            }
+            else
+            {
+                cout << "Invalid input. Try again." << endl;
+            }
+        }
+    
         gameOver = false;
         turns = 0;
         currentPlayer = PLAYER;
-    	initBoard(); // initial setup
-    	playGame(); // begin the game
+        initBoard();
+        playGame();
     }
+    
     
 	return 0;
 }
 //-------------------------------------------------------------------------------//
 //---------------------------------- END OF CODE --------------------------------//
 //-------------------------------------------------------------------------------//
-
 
